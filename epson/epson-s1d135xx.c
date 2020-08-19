@@ -535,7 +535,7 @@ int s1d135xx_set_epd_power(struct s1d135xx *p, int on)
 		if (s1d135xx_wait_idle(p))
 			return -1;
 	}
-//*/
+*/
 	do {
 		tmp = s1d135xx_read_reg(p, S1D135XX_REG_PWR_CTRL);
 	} while (tmp & S1D135XX_PWR_CTRL_BUSY);

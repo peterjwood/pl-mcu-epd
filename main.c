@@ -45,6 +45,7 @@
 #include "msp430-sdcard.h"
 #include "msp430-uart.h"
 #include "msp430-spi.h"
+#include "msp430-zigbeespi.h"
 
 #define LOG_TAG "main"
 #include "utils.h"
@@ -197,13 +198,6 @@ static const struct pl_gpio_config g_epson_gpios[] = {
 	{ EPSON_CS_0,    PL_GPIO_OUTPUT | PL_GPIO_INIT_H },
 };
 
-static const uint16_t g_epson_parallel[] = {
-	EPSON_HDB0, EPSON_HDB1, EPSON_HDB2, EPSON_HDB3, EPSON_HDB4, EPSON_HDB5,
-	EPSON_HDB6, EPSON_HDB7, EPSON_HDB8, EPSON_HDB9, EPSON_HDB10,
-	EPSON_HDB11, EPSON_HDB12, EPSON_HDB13, EPSON_HDB14, EPSON_HDB15,
-	EPSON_TFT_HSYNC, EPSON_TFT_VSYNC, EPSON_TFT_DE, EPSON_TFT_CLK,
-};
-
 static struct s1d135xx_data init_g_s1d135xx_data(void){
 	struct s1d135xx_data g_s1d135xx_data = {
 		EPSON_RESET, EPSON_CS_0, EPSON_HIRQ, PL_GPIO_NONE, PL_GPIO_NONE, EPSON_CLK_EN, EPSON_VCC_EN };
@@ -274,7 +268,6 @@ static const char* g_wflib_fatfs_path(void){
 
 static FIL g_wflib_fatfs_file;
 struct pl_interface epson_spi;
-struct pl_interface epson_parallel;
 
 /* --- main --- */
 
@@ -301,7 +294,6 @@ int main_init(void)
 	struct tps65185_info pmic_info;
 	struct s1d135xx s1d135xx = { &g_s1d135xx_data, &g_plat.gpio };
 	FATFS sdcard;
-	unsigned i;
 
 	g_plat.sys_gpio = &g_sys_gpio;
 
@@ -333,28 +325,27 @@ int main_init(void)
 	/* hard-reset Epson controller to avoid errors during soft reset */
 	s1d135xx_hard_reset(&g_plat.gpio, &g_s1d135xx_data);
 
-	/* initialise Epson parallel interface GPIOs */
+	/* initialise Epson parallel interface GPIOs
 	for (i = 0; i < ARRAY_SIZE(g_epson_parallel); ++i) {
 		if (g_plat.gpio.config(g_epson_parallel[i],
 				       PL_GPIO_OUTPUT | PL_GPIO_INIT_L)) {
 			abort_msg("Epson parallel GPIO init failed", ABORT_MSP430_GPIO_INIT);
 		}
-	}
+	} */
+	g_plat.gpio.config(EPSON_HDB2,PL_GPIO_OUTPUT | PL_GPIO_INIT_L);
+	g_plat.gpio.set(EPSON_HDB2,1);
+
+	if (msp430_zigbee_spi_init(&g_plat.gpio, 1, SPI_DIVISOR))
+	    abort_msg("Zigbee SPI init failed", ABORT_MSP430_COMMS_INIT);
 
 	/* initialise MSP430 I2C master 0 */
 	if (msp430_i2c_init(&g_plat.gpio, 0, &host_i2c))
 		abort_msg("I2C init failed", ABORT_MSP430_COMMS_INIT);
 
 	/* initialise MSP430 SPI bus */
-	if(global_config.interface_type == PARALLEL){
-		if (parallel_init(&g_plat.gpio, &epson_parallel))
-			abort_msg("Parallel Interface init failed", ABORT_MSP430_COMMS_INIT);
-		s1d135xx.interface = &epson_parallel;
-	}else{
-		if (spi_init(&g_plat.gpio, SPI_CHANNEL, SPI_DIVISOR, &epson_spi))
-			abort_msg("SPI init failed", ABORT_MSP430_COMMS_INIT);
-		s1d135xx.interface = &epson_spi;
-	}
+	if (spi_init(&g_plat.gpio, SPI_CHANNEL, SPI_DIVISOR, &epson_spi))
+	    abort_msg("SPI init failed", ABORT_MSP430_COMMS_INIT);
+	s1d135xx.interface = &epson_spi;
 
 	/* initialise SD-card */
 	SDCard_plat = &g_plat;
