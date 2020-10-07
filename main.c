@@ -45,7 +45,8 @@
 #include "msp430-sdcard.h"
 #include "msp430-uart.h"
 #include "msp430-spi.h"
-#include "msp430-zigbeespi.h"
+#include "hal_rf.h"
+#include "basic_rf.h"
 
 #define LOG_TAG "main"
 #include "utils.h"
@@ -53,13 +54,6 @@
 /* I2C addresses */
 #define I2C_HWINFO_EEPROM_ADDR 0x50
 #define I2C_DISPINFO_EEPROM_ADDR 0x54
-
-/* Navigation buttons */
-#define	SW1         MSP430_GPIO(2,0)
-#define	SW2         MSP430_GPIO(2,1)
-#define	SW3         MSP430_GPIO(2,2)
-#define	SW4         MSP430_GPIO(2,3)
-#define	SW5         MSP430_GPIO(2,4)
 
 /* User LEDs */
 #define	LED1        MSP430_GPIO(8,0)
@@ -94,13 +88,6 @@ static const struct pl_gpio_config g_gpios[] = {
 	{ SEL3, PL_GPIO_INPUT | PL_GPIO_PU },
 	{ SEL4, PL_GPIO_INPUT | PL_GPIO_PU },
 
-	/* Navigation buttons */
-	{ SW1, PL_GPIO_INPUT | PL_GPIO_INTERRUPT | PL_GPIO_INT_FALL },
-	{ SW2, PL_GPIO_INPUT | PL_GPIO_INTERRUPT | PL_GPIO_INT_FALL },
-	{ SW3, PL_GPIO_INPUT | PL_GPIO_INTERRUPT | PL_GPIO_INT_FALL },
-	{ SW4, PL_GPIO_INPUT | PL_GPIO_INTERRUPT | PL_GPIO_INT_FALL },
-	{ SW5, PL_GPIO_INPUT | PL_GPIO_INTERRUPT | PL_GPIO_INT_FALL },
-
 	/* User LEDs */
 	{ LED1, PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
 	{ LED2, PL_GPIO_OUTPUT | PL_GPIO_INIT_L },
@@ -116,7 +103,6 @@ static const struct pl_gpio_config g_gpios[] = {
 
 static const struct pl_system_gpio g_sys_gpio = {
 	{ SEL1, SEL2, SEL3, SEL4 },
-	{ SW1, SW2, SW3, SW4, SW5 },
 	{ LED1, LED2, LED3, LED4 },
 	ASSERT_LED,
 	RUDDOCK_SHUTDOWN,
@@ -164,7 +150,7 @@ static struct pl_epdpsu_i2c g_epdpsu_i2c = {
 #define EPSON_RESET       MSP430_GPIO(5,0)
 #define EPSON_CS_0        MSP430_GPIO(3,6)
 
-/* Parallel interface */
+/* Parallel interface
 #define	EPSON_HDB0        MSP430_GPIO(4,0)
 #define	EPSON_HDB1        MSP430_GPIO(4,1)
 #define	EPSON_HDB2        MSP430_GPIO(4,2)
@@ -181,7 +167,7 @@ static struct pl_epdpsu_i2c g_epdpsu_i2c = {
 #define	EPSON_HDB13       MSP430_GPIO(6,5)
 #define	EPSON_HDB14       MSP430_GPIO(6,6)
 #define	EPSON_HDB15       MSP430_GPIO(6,7)
-
+*/
 /* TFT interface extensions */
 #define	EPSON_TFT_HSYNC   MSP430_GPIO(7,2)
 #define	EPSON_TFT_VSYNC   MSP430_GPIO(7,3)
@@ -268,6 +254,14 @@ static const char* g_wflib_fatfs_path(void){
 
 static FIL g_wflib_fatfs_file;
 struct pl_interface epson_spi;
+static basicRfCfg_t basicRfConfig;
+
+// Application parameters
+#define RF_CHANNEL                0x0d      // 2.4 GHz RF channel
+
+// BasicRF address definitions
+#define PAN_ID                0xfa80
+
 
 /* --- main --- */
 
@@ -332,11 +326,26 @@ int main_init(void)
 			abort_msg("Epson parallel GPIO init failed", ABORT_MSP430_GPIO_INIT);
 		}
 	} */
-	g_plat.gpio.config(EPSON_HDB2,PL_GPIO_OUTPUT | PL_GPIO_INIT_L);
+	/*g_plat.gpio.config(EPSON_HDB2,PL_GPIO_OUTPUT | PL_GPIO_INIT_L);
 	g_plat.gpio.set(EPSON_HDB2,1);
+    */
+    // Config basicRF
+    basicRfConfig.panId = PAN_ID;
+    basicRfConfig.channel = RF_CHANNEL;
+    basicRfConfig.ackRequest = 1;
+#ifdef SECURITY_CCM
+    basicRfConfig.securityKey = key;
+#endif
 
-	if (msp430_zigbee_spi_init(&g_plat.gpio, 1, SPI_DIVISOR))
-	    abort_msg("Zigbee SPI init failed", ABORT_MSP430_COMMS_INIT);
+    if(halRfInit()==FAILED) {
+        abort_msg("HAL RF init failed", ABORT_MSP430_COMMS_INIT);
+        }
+    // Initialize BasicRF
+    basicRfConfig.myAddr = 0x2007;
+    if(basicRfInit(&basicRfConfig)==FAILED) {
+        abort_msg("Zigbee RF init failed", ABORT_MSP430_COMMS_INIT);
+    }
+    basicRfReceiveOn();
 
 	/* initialise MSP430 I2C master 0 */
 	if (msp430_i2c_init(&g_plat.gpio, 0, &host_i2c))

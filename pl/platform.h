@@ -42,7 +42,6 @@ struct pl_hwinfo;
 
 struct pl_system_gpio {
 	unsigned sel[4];
-	unsigned sw[5];
 	unsigned led[4];
 	unsigned assert_led;
 	unsigned ruddock_shutdown;

@@ -33,6 +33,7 @@ uint8_t port2_int_summary = 0;
  * @brief   Port 2 interrupt service routine
  * @return  None
  ******************************************************************************/
+#if 0
 #pragma vector=PORT2_VECTOR
 __interrupt void Port_2(void)
 {
@@ -73,7 +74,7 @@ __interrupt void Port_2(void)
     }
     __bis_SR_register(gie);					// Restore original GIE state
 }
-
+#endif
 /* These vectors are used in the code so cannot be declared here */
 #if 0
 #pragma vector=PORT2_VECTOR
