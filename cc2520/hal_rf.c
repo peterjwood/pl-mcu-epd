@@ -143,7 +143,7 @@ static uint8 rssiOffset = RSSI_OFFSET;
 * LOCAL FUNCTIONS
 */
 static uint8 halRfWaitRadioReady(void);
-static uint8 halRfGetStatusByte(void);
+//static uint8 halRfGetStatusByte(void);
 
 
 
@@ -281,6 +281,10 @@ void halRfSetChannel(uint8 channel)
 {
     CC2520_REGWR8(CC2520_FREQCTRL, MIN_CHANNEL + ((channel - MIN_CHANNEL) * CHANNEL_SPACING));
 }
+uint8 halRfGetChannel(void)
+{
+    return CC2520_REGRD8(CC2520_FREQCTRL);
+}
 
 
 /***********************************************************************************
@@ -310,6 +314,11 @@ void halRfSetShortAddr(uint16 shortAddr)
 void halRfSetPanId(uint16 panId)
 {
     CC2520_MEMWR16(CC2520_RAM_PANID, panId);
+}
+
+uint16 halRfGetPanId(void)
+{
+    return CC2520_MEMRD16(CC2520_RAM_PANID);
 }
 
 

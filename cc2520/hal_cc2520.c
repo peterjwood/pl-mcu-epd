@@ -55,6 +55,7 @@ static uint8 CC2520_INS_MEMCP_COMMON(uint8 instr, uint8 pri, uint16 count, \
 static uint8 CC2520_SPI_TXRX(uint8 x)
 {
     CC2520_SPI_TX(x);
+    while (CC2520_SPI_BUSY());
     CC2520_SPI_WAIT_RXRDY();
     return CC2520_SPI_RX();
 }
@@ -184,8 +185,8 @@ void CC2520_INS_WR_ARRAY(uint16 count, uint8  *pData)
     while (count--) {
         CC2520_SPI_TX(*pData);
         pData++;
-        CC2520_SPI_WAIT_RXRDY();
     }
+    while(CC2520_SPI_BUSY());
 }
 
 

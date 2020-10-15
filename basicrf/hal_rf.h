@@ -76,13 +76,15 @@ void  halRfReceiveOff(void);
 void  halRfDisableRxInterrupt(void);
 void  halRfEnableRxInterrupt(void);
 void  halRfRxInterruptConfig(ISR_FUNC_PTR pfISR);
-
+uint8 halRfGetStatusByte(void);
 
 
 // IEEE 802.15.4 specific interface
 void  halRfSetChannel(uint8 channel);
+uint8  halRfGetChannel(void);
 void  halRfSetShortAddr(uint16 shortAddr);
 void  halRfSetPanId(uint16 PanId);
+uint16 halRfGetPanId(void);
 
 
 #endif

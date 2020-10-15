@@ -103,6 +103,7 @@
 #define CC2520_SPI_RX_REG               (UCA2RXBUF)
 #define CC2520_SPI_RX_IS_READY()        (UCA2IFG & UCRXIFG)
 #define CC2520_SPI_TX_READY()           (UCA2IFG & UCTXIFG)
+
 #define CC2520_SPI_BUSY()               (UCA2STAT & UCBUSY)
 
 // SPI access macros
